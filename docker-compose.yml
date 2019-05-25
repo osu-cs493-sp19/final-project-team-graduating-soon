@@ -1,0 +1,35 @@
+version: '3.6'
+
+services:
+  api:
+    build: .
+    image: cloud-api
+    restart: always
+    ports:
+      - "8000:8000" 
+    depends_on:
+      - mongo
+    environment:
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+      MONGO_USER: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_HOST: ${MONGO_HOST}
+      MONGO_PORT: 27017
+    
+
+  mongo:
+    image: mongo:latest
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+      - ./db-init/:/docker-entrypoint-initdb.d
+    environment:
+      MONGO_USER: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+
+volumes:
+  mongo-data:
+    name: mongo-data-volume
