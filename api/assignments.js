@@ -10,140 +10,126 @@ const validation = require('../lib/validation');
 const { getDBReference } = require("../lib/mongo");
 const ObjectID = require('mongodb').ObjectID;
 
-const reviews = require('../data/reviews');
-
 exports.router = router;
-exports.reviews = reviews;
-
-/*
- * Schema describing required/optional fields of a review object.
- */
-const reviewSchema = {
-  userid: { required: true },
-  businessid: { required: true },
-  dollars: { required: true },
-  stars: { required: true },
-  review: { required: false }
-};
-
 
 /*
  * Route to create a new review.
  */
 router.post("/", async (req, res) => {
-  if (validation.validateAgainstSchema(req.body, reviewSchema)) {
+  if (validation.validateAgainstSchema(req.body, assignmentSchema)) {
     try {
-      const id = await insertNewReview(req.body);
+      const id = await insertNewAssignment(req.body);
       res.status(201).send({
         id: id
       });
     } catch (err) {
       console.error(err);
       res.status(500).send({
-        error: "Failed to insert review.  Try again later."
+        error: "Failed to insert assignment.  Try again later."
       });
     }
   } else {
     res.status(400).send({
-      err: "Request body does not contain a valid Review."
+      err: "Assignment body does not contain a valid Assignment."
     });
   }
 });
-
-insertNewReview = async function(review) {
-  const db = getDBReference();
-  const collection = db.collection("reviews");
-  const result = await collection.insertOne(review);
-  return result.insertedId;
-};
 
 
 /*
  * Route to fetch info about a specific review.
  */
-router.get("/:reviewid", async (req, res, next) => {
+router.get("/:assignmentid", async (req, res, next) => {
   try {
-    const review = await getReviewByID(req.params.reviewid);
-    if (review) {
-      res.status(200).send(review);
+    const assignment = await getAssignmentByID(req.params.assignmentid);
+    if (assignment) {
+      res.status(200).send(assignment);
     } else {
       next();
     }
   } catch (err) {
     console.log(err);
     res.status(500).send({
-      error: "Unable to fetch review."
+      error: "Unable to fetch assignment."
     });
   }
   
 });
 
-async function getReviewByID(id) {
-  const db = getDBReference();
-  const collection = db.collection("reviews");
-  const results = await collection
-    .find({
-      _id: new ObjectID(id)
-    })
-    .toArray();
-  return results[0];
-}
 
 /*
  * Route to update a review.
  */
-router.put("/:reviewid", async(req, res, next) => {
+router.patch("/:assignmentid", async(req, res, next) => {
   try {
-    const review = await updateReview(req.params.reviewid, req.body);
-    if (review) {
-      res.status(200).send(review);
+    const assignment = await updateAssignment(req.params.assignmentid, req.body);
+    if (assignment) {
+      res.status(200).send(assignment);
     } else {
       next();
     }
   } catch (err) {
     console.log(err);
     res.status(500).send({
-      error: "Unable to update review."
+      error: "Unable to update assignment."
     })
   }
 
 });
 
-async function updateReview(id, review) {
-  const db = getDBReference();
-  const collection = db.collection("reviews");
-  const result = await collection.replaceOne(
-    { "_id": ObjectID(id) },
-    { "userid": review.userid, "businessid": review.businessid, "dollars": review.dollars, "stars": review.stars, "review": review.review }
-    );
-  return result;
-}
 
 /*
- * Route to delete a review.
+ * Route to delete a assignment.
  */
-router.delete("/:reviewid", async (req, res, next) => {
+router.delete("/:assignmentid", async (req, res, next) => {
   try {
-    const review = await deleteReview(req.params.reviewid);
-    if (review) {
-      res.status(200).send(review);
+    const assignment = await deleteAssignment(req.params.assignmentid);
+    if (assignment) {
+      res.status(200).send(assignment);
     } else {
       next();
     }
   } catch (err) {
     console.log(err);
     res.status(500).send({
-      error: "Unable to delete review."
+      error: "Unable to delete assignment."
     })
   }
 
 });
 
-async function deleteReview(id) {
-  const db = getDBReference();
-  const collection = db.collection("reviews");
-  const result = await collection.deleteOne(
-    {"_id": ObjectID(id) }
-  );
-  return result;
-}
+
+router.get("/:assignmentid/submissions", async (req, res, next) => {
+  try {
+    const SubmissionsPage = await getSubmissionsPage(
+      parseInt(req.query.page) || 1
+    );
+    console.log(SubmissionsPage);
+    res.status(200).send(SubmissionsPage);
+  } catch (err) {
+    res.status(500).send({
+      error: "Error fetching submissions.  Try again later."
+    });
+  }
+});
+
+
+router.post("/:assignmentid/submissions", async (req, res) => {
+  if (validation.validateAgainstSchema(req.body, submissionSchema)) {
+    try {
+      const id = await insertNewSubmission(req.body);
+      res.status(201).send({
+        id: id
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({
+        error: "Failed to insert submissions.  Try again later."
+      });
+    }
+  } else {
+    res.status(400).send({
+      err: "Assignment body does not contain a valid Submissions."
+    });
+  }
+});

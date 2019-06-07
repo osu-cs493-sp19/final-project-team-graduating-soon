@@ -1,25 +1,14 @@
-
-
-// UNTOUCHED USERS - OLD CODE - NEEDS UPDATE
-
-
 const router = require('express').Router();
-const validation = require("../lib/validation");
-const { getDBReference } = require("../lib/mongo");
-const ObjectID = require('mongodb').ObjectID;
 
-exports.router = router;
-
-const { businesses } = require('./businesses');
-const { reviews } = require('./reviews');
-const { photos } = require('./photos');
+const { validateAgainstSchema } = require('../lib/validation');
+const { UserSchema, insertNewUser, getUserById, validateUser  } = require('../models/user');
 
 /*
  * Route to list all of a user's businesses.
  */
 router.get("/:userid", async (req, res, next) => {
   try {
-    const user = await getBusinessByUserID(parseInt(req.params.userid));
+    const user = await getUserByID(parseInt(req.params.userid));
     if (user) {
       res.status(200).send(user);
     } else {
@@ -33,17 +22,6 @@ router.get("/:userid", async (req, res, next) => {
   }
   
 });
-
-async function getBusinessByUserID(id) {
-  const db = getDBReference();
-  const collection = db.collection("businesses");
-  const results = await collection
-    .find({
-      ownerid: id
-    })
-    .toArray();
-  return results;
-}
 
 router.post("/", async (req, res, next) => {
   if (validation.validateAgainstSchema(req.body, businessSchema)) {
