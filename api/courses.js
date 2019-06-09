@@ -9,8 +9,6 @@ const { getDBReference } = require("../lib/mongo");
 const ObjectID = require('mongodb').ObjectID;
 
 
-exports.router = router;
-
 router.get("/", async (req, res) => {
   try {
     const CoursesPage = await getCoursesPage(
@@ -183,3 +181,5 @@ router.get('/:id/assignments', async (req, res, next) => {
     });
   }
 });
+
+module.exports = router;

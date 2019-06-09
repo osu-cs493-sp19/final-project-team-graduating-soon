@@ -10,7 +10,6 @@ const validation = require('../lib/validation');
 const { getDBReference } = require("../lib/mongo");
 const ObjectID = require('mongodb').ObjectID;
 
-exports.router = router;
 
 /*
  * Route to create a new review.
@@ -133,3 +132,5 @@ router.post("/:assignmentid/submissions", async (req, res) => {
     });
   }
 });
+
+module.exports = router;

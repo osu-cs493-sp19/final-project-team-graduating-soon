@@ -88,3 +88,5 @@ const userr = await getUserByEmail(req.body.email);
         }
       }
 });
+
+module.exports = router;

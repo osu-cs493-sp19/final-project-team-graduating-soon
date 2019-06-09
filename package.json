@@ -19,10 +19,13 @@
   },
   "homepage": "https://github.com/osu-cs493-sp19/final-project-team-graduating-soon#readme",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
+    "jsonwebtoken": "^8.5.1",
+    "mongodb": "^3.2.3",
     "morgan": "^1.9.1",
-    "mongodb": "^3.2.3"
+    "mysql": "^2.17.1"
   },
   "devDependencies": {
     "nodemon": "^1.18.11"
