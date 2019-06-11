@@ -11,10 +11,9 @@ const {
   insertNewCourse,
   getCourseByID,
   updateCourse,
-  //getStudentsByCourseId,
-  deleteCourse
-  //getRosterByCourseId,
-  //getAssignmentsByCourseId
+  addRemoveStudents,
+  deleteCourse,
+  generateCSV
 } = require('../models/course');
 
 
@@ -120,9 +119,9 @@ router.delete("/:courseid", async (req, res, next) => {
 
 router.get('/:id/students', async (req, res, next) => {
   try {
-    const students = await getStudentsByCourseId(parseInt(req.params.id));
-    if (students) {
-      res.status(200).send({ students: students });
+    const course = await getCourseByID(req.params.id);
+    if (course) {
+      res.status(200).send({ students: course.students });
     } else {
       next();
     }
@@ -134,23 +133,23 @@ router.get('/:id/students', async (req, res, next) => {
   }
 });
 
-//dont know about the schema
+
 router.post("/:id/students", async (req, res) => {
-  if (validation.validateAgainstSchema(req.body, CourseSchema)) {
+  if (req.body) {
     try {
-      const id = await insertNewCourse(req.body);
+      const id = await addRemoveStudents(req.params.id, req.body);
       res.status(201).send({
-        id: id
+        Response : "Success"
       });
     } catch (err) {
       console.error(err);
       res.status(500).send({
-        error: "Failed to insert course.  Try again later."
+        error: "The request was not made by an authenticated User satisfying the authorization criteria described above."
       });
     }
   } else {
     res.status(400).send({
-      err: "Request body does not contain a valid Course."
+      err: "The request body was either not present or did not contain the fields described above"
     });
   }
 });
@@ -158,16 +157,17 @@ router.post("/:id/students", async (req, res) => {
 
 router.get('/:id/roster', async (req, res, next) => {
   try {
-    const roster = await getRosterByCourseId(parseInt(req.params.id));
-    if (roster) {
-      res.status(200).send({ roster: roster });
+    const course = await getCourseByID(req.params.id);
+    if (course) {
+      const csv = await generateCSV(req.params.id);
+      res.status(200).send({ csv });
     } else {
       next();
     }
   } catch (err) {
     console.error(err);
     res.status(500).send({
-      error: "Unable to fetch roster.  Please try again later."
+      error: "Unable to fetch students.  Please try again later."
     });
   }
 });
@@ -175,16 +175,16 @@ router.get('/:id/roster', async (req, res, next) => {
 
 router.get('/:id/assignments', async (req, res, next) => {
   try {
-    const assignments = await getAssignmentsByCourseId(parseInt(req.params.id));
-    if (assignments) {
-      res.status(200).send({ assignments: assignments });
+    const course = await getCourseByID(req.params.id);
+    if (course) {
+      res.status(200).send({ students: course.assignments });
     } else {
       next();
     }
   } catch (err) {
     console.error(err);
     res.status(500).send({
-      error: "Unable to fetch assignments.  Please try again later."
+      error: "Unable to fetch students.  Please try again later."
     });
   }
 });
