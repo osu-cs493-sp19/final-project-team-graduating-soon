@@ -1,14 +1,17 @@
 const router = require('express').Router();
 
-const { validateAgainstSchema } = require('../lib/validation');
+const validation = require('../lib/validation');
 const { UserSchema,
 	insertNewUser, 
 	getUserById, 
 	postUserLogin,
-	getUserByEmail 
+	getUserByEmail,
+	validateUser,
+	getCoursesByInstructorId
 } = require('../models/user');
 const bcrypt = require('bcryptjs');
 const { generateAuthToken, requireAuthentication } = require('../lib/auth');
+const { validateAgainstSchema } = require('../lib/validation');
 
 /*
 const { getBusinessesByOwnerId } = require('../models/business');
@@ -16,9 +19,13 @@ const { getReviewsByUserId } = require('../models/review');
 const { getPhotosByUserId } = require('../models/photo');
 */
 
+
+
 /*
  * Route to list all of a user's businesses.
  */
+ 
+ /* 
 router.get('/:id/businesses', requireAuthentication, async (req, res, next) => {
 if (req.user != req.params.id) {
 	console.log(req.user);
@@ -41,12 +48,14 @@ if (req.user != req.params.id) {
     });
   }
 }
-});
+}); 
+*/
 
 
 /*
  * Route to list all of a user's reviews.
  */
+ /* 
 router.get('/:id/reviews', requireAuthentication, async (req, res, next) => {
   if (req.user != req.params.id) {
 	console.log(req.user);
@@ -70,10 +79,13 @@ router.get('/:id/reviews', requireAuthentication, async (req, res, next) => {
   }
 }
 });
+ */
+
 
 /*
  * Route to list all of a user's photos.
  */
+ /* 
 router.get('/:id/photos', requireAuthentication, async (req, res, next) => {
 if (req.user != req.params.id) {
 	console.log(req.user);
@@ -97,82 +109,101 @@ if (req.user != req.params.id) {
   }
 }
 });
-
+ */
 
 /*
  * Route to create a new user.
  */
-router.post('/', function (req, res) {
-  const mysqlPool = req.app.locals.mysqlPool;
-  if (validation.validateAgainstSchema(req.body, UserSchema) && req.body.role == 'student' || 'instructor') {
-   try{
-    const id = insertNewUser(req.body);
-        res.status(201).send({
-          id: id,
-          links: {
-            user: `/users/${id}`
-          }
+ router.post('/', async (req, res) => {
+  console.log("req user: ", req.user);
+  if (validateAgainstSchema(req.body, UserSchema)) {
+    try {
+      if(req.body.role == "admin" ){
+        res.status(403).send({
+          error: "New users must register as students"
         });
-  }catch(err) {
-	console.error(err);
-        res.status(500).json({
-          error: "Failed to insert new user."
+      } else if(req.body.role == "instructor" ){
+        res.status(403).send({
+          error: "New users must register as students"
+        });
+      } else {
+        const id = await insertNewUser(req.body);
+        console.log("newUser _id: ", id);
+        res.status(201).send({
+          _id: id
         });
       }
+    } catch (err) {
+      console.error("  -- Error:", err);
+      res.status(500).send({
+        error: "Error inserting new user.  Try again later."
+      });
+    }
   } else {
-    res.status(400).json({
-      error: "Request doesn't contain a valid user."
+    res.status(400).send({
+      error: "Request body does not contain a valid User."
     });
   }
 });
 
 
 
-
 router.post('/login', async (req, res) => {
-try{
-const userr = await getUserByEmail(req.body.email);
   if (req.body && req.body.email && req.body.password) {
-    getUserByEmail(req.body.email, true)
-      .then((user) => {
-        if (user) {
-          return bcrypt.compare(req.body.password, user.password);
-        } else {
-          return Promise.reject(401);
-        }
-      })
-      .then((loginSuccessful) => {
-        if (loginSuccessful) {
-          return generateAuthToken(userr.id);
-        } else {
-          return Promise.reject(401);
-        }
-      })
-      .then((token) => {
-        res.status(200).json({
+    try {
+      const authenticated = await validateUser(req.body.email, req.body.password);
+      if (authenticated) {
+        const user = await getUserByEmail(req.body.email);
+        const token = generateAuthToken(user._id);
+        console.log("_id: ", user);
+        console.log("auth token: ", token);
+        res.status(200).send({
           token: token
         });
-      })  
-} else {
-    res.status(400).json({
-      error: "Request needs a userID and password."
-    })
-  }
-      }catch(err) {
-        if (err === 401) {
-          res.status(401).json({
-            error: "Invalid credentials."
-          });
-        } else {
-	  console.error(err);
-          res.status(500).json({
-            error: "Failed to fetch user."
-          });
-        }
+      } else {
+        res.status(401).send({
+          error: "Invalid credentials"
+        });
       }
+    } catch (err) {
+      res.status(500).send({
+        error: "Error validating user.  Try again later."
+      });
+    }
+  } else {
+    res.status(400).send({
+      error: "Request body was invalid"
+    });
+  }
 });
 
 
+router.get('/:id', requireAuthentication, async (req, res, next) => {
+ if (req.params.id == req.user) {	   
+    try {
+      const user = await getUserById(req.params.id);
+      if (user) {
+        if (user.role == "instructor") {
+          await getCoursesByInstructorId(req.params.id);
+        }
+        res.status(200).send(user);
+      } else {
+        next();
+      }
+    } catch (err) {
+      console.error("  -- Error:", err);
+      res.status(500).send({
+        error: "Error fetching user.  Try again later."
+      });
+    }
+  } else {
+    res.status(403).send({
+      error: "Unauthorized to access the specified resource"
+    });
+  }
+});
+
+//**************************************************8888888
 
 /*
  * Route to delete a user.
@@ -216,40 +247,6 @@ try {
     });
   }
 });
-
-
-
-
-router.get('/:id', requireAuthentication, async (req, res, next) => {
-if (req.user != req.params.id) {
-	console.log(req.user);
-    res.status(403).json({
-      error: "Unauthorized to access that resource."
-    });
-	console.log(req.params.id);
-  } else {
-  try {
-    const user = await getUserByID(parseInt(req.params.id));
-    if (user) {
-	const userValues = {
-	      id: user.id,
-          name: user.name,
-          email: user.email,
-	      role: user.role,
-        };
-      res.status(200).send({ user: userValues });
-    } else {
-      next();
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({
-      error: "Unable to fetch user.  Please try again later."
-    });
-  }
-}
-});
-
 
 
 router.put('/:userID', requireAuthentication, async (req, res, next) => {
