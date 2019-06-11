@@ -13,10 +13,11 @@ const mysqlPool = require('../lib/mysqlPool');
  * Schema describing required/optional fields of a user object.
  */
 const UserSchema = {
+  userid: { required: false },
   name: { required: true },
   email: { required: true },
   password: { required: true },
-  role: { required: false }
+  role: { required: true }
 };
 exports.UserSchema = UserSchema;
 
@@ -32,6 +33,7 @@ function insertNewUser(user) {
           name: user.name,
           password: passwordHash,
           email: user.email,
+		  role: user.role,
         };
         mysqlPool.query(
           'INSERT INTO users SET ?',
@@ -48,7 +50,6 @@ function insertNewUser(user) {
     });
 }
 exports.insertNewUser = insertNewUser;
-
 
 
 function getUserByEmail(userEmail) {
@@ -72,36 +73,63 @@ exports.getUserByEmail = getUserByEmail;
 /*
  * Fetch a user from the DB based on user ID.
  */
-function getUserById(id, includePassword) {
+function getUserByID(userID) {
   return new Promise((resolve, reject) => {
-    if (includePassword) {
-      mysqlPool.query(
-        "SELECT * FROM users WHERE id = ?",
-        [id],
-        (err, results) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(results[0]);
-          }
-        }
-      );
-    } else {
-      mysqlPool.query(
-        "SELECT name, email FROM users WHERE id = ?",
-        [id],
-        (err, results) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(results[0]);
-          }
-        }
-      );
-    }
+    mysqlPool.query('SELECT * FROM users WHERE id = ?', [ userID ], function (err, results) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(results[0]);
+      }
+    });
   });
 }
-exports.getUserById = getUserById;
+exports.getUserByID = getUserByID;
+
+
+
+
+function deleteUserByID(id) {
+  return new Promise((resolve, reject) => {
+    mysqlPool.query(
+      'DELETE FROM users WHERE id = ?',
+      [ userID ],
+      function (err, result) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result.affectedRows > 0);
+        }
+      }
+    );
+  });
+}
+exports.deleteUserByID = deleteUserByID;
+
+
+
+function updateUserByID(id, user) {
+  return new Promise((resolve, reject) => {
+    const userValues = {
+	  id: null,
+          name: user.name,
+          email: user.email,
+		  role: user.role
+    };
+    mysqlPool.query(
+      'UPDATE users SET ? WHERE id = ?',
+      [ userValues, id ],
+      function (err, result) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result.affectedRows > 0);
+        }
+      }
+    );
+  });
+}
+
 
 
 /*
