@@ -3,7 +3,9 @@
  */
 
 const mongo = require("../lib/mongo");
+const { getDBReference } = require("../lib/mongo");
 const { extractValidFields } = require("../lib/validation");
+const ObjectID = require('mongodb').ObjectID;
 
 
 /*
@@ -19,28 +21,97 @@ const CourseSchema = {
 exports.CourseSchema = CourseSchema;
 
 
-getCoursesPage
+getCoursesPage = async function(page) {
+  const db = getDBReference();
+  const collection = db.collection("courses");
+  const count = await collection.countDocuments();
+
+  const pageSize = 10;
+  const lastPage = Math.ceil(count / pageSize);
+  page = page < 1 ? 1 : page;
+  page = page > lastPage ? lastPage : page;
+  const offset = (page - 1) * pageSize;
+
+  const results = await collection
+    .find({})
+    .sort({ _id: 1 })
+    .skip(offset)
+    .limit(pageSize)
+    .toArray();
+
+  return {
+    courses: results,
+    page: page,
+    totalPages: lastPage,
+    pageSize: pageSize,
+    count: count
+  };
+}; 
+exports.getCoursesPage = getCoursesPage;
 
 
-insertNewCourse
+insertNewCourse = async function(course) {
+  // const lodgingToInsert = extractValidFields(lodging);
+  const db = getDBReference();
+  const collection = db.collection("courses");
+  const result = await collection.insertOne(course);
+  return result.insertedId;
+};
+exports.insertNewCourse = insertNewCourse;
 
 
-getCourseByID
+async function getCourseByID(id) {
+  const db = getDBReference();
+  const collection = db.collection("courses");
+  const results = await collection
+    .find({
+      _id: new ObjectID(id)
+    })
+    .toArray();
+  return results[0];
+};
+exports.getCourseByID = getCourseByID;
 
 
-updateCourse
+async function updateCourse(id, course) {
+  const db = getDBReference();
+  const collection = db.collection("courses");
+  const result = await collection.replaceOne(
+    { "_id": ObjectID(id) },
+    { "subject": course.subject, "number": course.number, "title": course.title, "term": course.term, "instructorID": course.instructorID}
+    );
+  return result;
+}
+exports.updateCourse = updateCourse;
 
 
-deleteCourse
+async function deleteCourse(id) {
+  const db = getDBReference();
+  const collection = db.collection("courses");
+  const result = await collection.deleteOne(
+    {"_id": ObjectID(id) }
+  );
+  return result;
+}
+exports.deleteCourse = deleteCourse;
 
 
-getStudentsByCourseId
+//getStudentsByCourseId
 
 
-insertNewCourse
+async function addRemoveStudents(id) {
+  const db = getDBReference();
+  const collection = db.collection("courses");
+  const result = await collection.replaceOne(
+    { "_id": ObjectID(id) },
+    { "subject": course.subject, "number": course.number, "title": course.title, "term": course.term, "instructorID": course.instructorID}
+    );
+  return result;
+}
+exports.addRemoveStudents = addRemoveStudents;
 
 
-getRosterByCourseId
+//getRosterByCourseId
 
 
-getAssignmentsByCourseId
+//getAssignmentsByCourseId

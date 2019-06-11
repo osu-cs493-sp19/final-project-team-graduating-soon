@@ -5,8 +5,17 @@
 
 const router = require("express").Router();
 const validation = require("../lib/validation");
-const { getDBReference } = require("../lib/mongo");
-const ObjectID = require('mongodb').ObjectID;
+const {
+  CourseSchema,
+  getCoursesPage,
+  insertNewCourse,
+  getCourseByID,
+  updateCourse,
+  //getStudentsByCourseId,
+  deleteCourse
+  //getRosterByCourseId,
+  //getAssignmentsByCourseId
+} = require('../models/course');
 
 
 router.get("/", async (req, res) => {
@@ -15,8 +24,18 @@ router.get("/", async (req, res) => {
       parseInt(req.query.page) || 1
     );
     console.log(CoursesPage);
+    CoursesPage.links = {};
+    if (CoursesPage.page < CoursesPage.totalPages) {
+      CoursesPage.links.nextPage = `/businesses?page=${CoursesPage.page + 1}`;
+      CoursesPage.links.lastPage = `/businesses?page=${CoursesPage.totalPages}`;
+    }
+    if (CoursesPage.page > 1) {
+      CoursesPage.links.prevPage = `/businesses?page=${CoursesPage.page - 1}`;
+      CoursesPage.links.firstPage = '/businesses?page=1';
+    }
     res.status(200).send(CoursesPage);
   } catch (err) {
+    console.error(err);
     res.status(500).send({
       error: "Error fetching courses.  Try again later."
     });
@@ -25,7 +44,7 @@ router.get("/", async (req, res) => {
 
 
 router.post("/", async (req, res) => {
-  if (validation.validateAgainstSchema(req.body, courseSchema)) {
+  if (validation.validateAgainstSchema(req.body, CourseSchema)) {
     try {
       const id = await insertNewCourse(req.body);
       res.status(201).send({
@@ -45,9 +64,6 @@ router.post("/", async (req, res) => {
 });
 
 
-/*
- * Route to fetch info about a specific business.
- */
 router.get("/:courseid", async (req, res, next) => {
   try {
     const course = await getCourseByID(req.params.courseid);
@@ -66,9 +82,6 @@ router.get("/:courseid", async (req, res, next) => {
 });
 
 
-/*
- * Route to replace data for a business.
- */
 router.patch("/:courseid", async(req, res, next) => {
   try {
     const course = await updateCourse(req.params.courseid, req.body);
@@ -87,9 +100,6 @@ router.patch("/:courseid", async(req, res, next) => {
 });
 
 
-/*
- * Route to delete a business.
- */
 router.delete("/:courseid", async (req, res, next) => {
   try {
     const course = await deleteCourse(req.params.courseid);
@@ -108,9 +118,6 @@ router.delete("/:courseid", async (req, res, next) => {
 });
 
 
-/*
- * Route to list all of a user's businesses.
- */
 router.get('/:id/students', async (req, res, next) => {
   try {
     const students = await getStudentsByCourseId(parseInt(req.params.id));
@@ -129,7 +136,7 @@ router.get('/:id/students', async (req, res, next) => {
 
 //dont know about the schema
 router.post("/:id/students", async (req, res) => {
-  if (validation.validateAgainstSchema(req.body, courseSchema)) {
+  if (validation.validateAgainstSchema(req.body, CourseSchema)) {
     try {
       const id = await insertNewCourse(req.body);
       res.status(201).send({
