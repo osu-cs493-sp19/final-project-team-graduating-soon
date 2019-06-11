@@ -17,7 +17,7 @@ const UserSchema = {
   name: { required: true },
   email: { required: true },
   password: { required: true },
-  role: { required: false }
+  role: { required: true }
 };
 exports.UserSchema = UserSchema;
 
@@ -33,6 +33,7 @@ function insertNewUser(user) {
           name: user.name,
           password: passwordHash,
           email: user.email,
+		  role: user.role,
         };
         mysqlPool.query(
           'INSERT INTO users SET ?',
@@ -113,7 +114,7 @@ function updateUserByID(id, user) {
 	  id: null,
           name: user.name,
           email: user.email,
-		  admin: user.admin
+		  role: user.role
     };
     mysqlPool.query(
       'UPDATE users SET ? WHERE id = ?',

@@ -104,7 +104,7 @@ if (req.user != req.params.id) {
  */
 router.post('/', function (req, res) {
   const mysqlPool = req.app.locals.mysqlPool;
-  if (validation.validateAgainstSchema(req.body, UserSchema)) {
+  if (validation.validateAgainstSchema(req.body, UserSchema) && req.body.role == 'student' || 'instructor') {
    try{
     const id = insertNewUser(req.body);
         res.status(201).send({
@@ -177,27 +177,44 @@ const userr = await getUserByEmail(req.body.email);
 /*
  * Route to delete a user.
  */
-router.delete('/:id', requireAuthentication, function (req, res, next) {
-  const id = parseInt(req.params.id);
-  if (req.user != req.params.id) {
-    res.status(403).json({
-      error: "Unauthorized to access that resource."
+router.delete('/:id', requireAuthentication, async (req, res, next) =>{
+try {
+	const user = await getUserByID(parseInt(req.user));
+	if(user.role == 'admin'){
+		 deleteUserByID(id)
+		  .then((deleteSuccessful) => {
+			if (deleteSuccessful) {
+			  res.status(204).end();
+			} else {
+			  next();
+			}
+		  })
+		  .catch((err) => {
+			res.status(500).json({
+			  error: "Unable to delete user."
+			});
+		  });
+	}else if( req.params.id == req.user){
+		deleteUserByID(id)
+		  .then((deleteSuccessful) => {
+			if (deleteSuccessful) {
+			  res.status(204).end();
+			} else {
+			  next();
+			}
+		  })
+		  
+	}else{
+		res.status(403).json({
+			  error: "Unauthorized to access that resource."
+		});
+	}
+}catch (err) {
+    console.error(err);
+    res.status(500).send({
+      error: "Unable to delete user.  Please try again later."
     });
-  } else {
-    deleteUserByID(id)
-      .then((deleteSuccessful) => {
-        if (deleteSuccessful) {
-          res.status(204).end();
-        } else {
-          next();
-        }
-      })
-      .catch((err) => {
-        res.status(500).json({
-          error: "Unable to delete user."
-        });
-      });
-    }
+  }
 });
 
 
@@ -215,10 +232,10 @@ if (req.user != req.params.id) {
     const user = await getUserByID(parseInt(req.params.id));
     if (user) {
 	const userValues = {
-	  id: user.id,
+	      id: user.id,
           name: user.name,
           email: user.email,
-	  admin: user.admin,
+	      role: user.role,
         };
       res.status(200).send({ user: userValues });
     } else {
@@ -227,7 +244,7 @@ if (req.user != req.params.id) {
   } catch (err) {
     console.error(err);
     res.status(500).send({
-      error: "Unable to fetch photos.  Please try again later."
+      error: "Unable to fetch user.  Please try again later."
     });
   }
 }
@@ -235,29 +252,26 @@ if (req.user != req.params.id) {
 
 
 
-router.put('/:userID', function (req, res, next) {
-  const userID = parseInt(req.params.userID);
-  if (validation.validateAgainstSchema(req.body, UserSchema)) {
-    updateUserByID(userID, req.body)
-      .then((updateSuccessful) => {
-        if (updateSuccessful) {
-          res.status(200).json({
-            links: {
-              userID: `/users/${userID}`
-            }
-          });
-        } else {
-          next();
-        }
-      })
-      .catch((err) => {
-        res.status(500).json({
-          error: "Unable to update user."
-        });
-      });
-  } else {
-    res.status(400).json({
-      error: "Please fill out all required fields."
+router.put('/:userID', requireAuthentication, async (req, res, next) => {
+try {
+    const user = await getUserByID(parseInt(req.user));
+    if (user.role == 'admin') {
+			if (validation.validateAgainstSchema(req.body, UserSchema)) {
+			   updateUserByID(userID, req.body)
+			}
+      res.status(200).send({ user: userID });
+    }else if(req.user == req.body.id && req.body.role == user.role){
+			if (validation.validateAgainstSchema(req.body, UserSchema)) {
+			   updateUserByID(userID, req.body)
+			}
+			res.status(200).send({ user: userID });
+	}else {
+      next();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      error: "Invalid Authorization Level, please check parameters"
     });
   }
 });
