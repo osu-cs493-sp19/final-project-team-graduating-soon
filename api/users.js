@@ -139,7 +139,7 @@ if( req.params.id == req.user || requestor.role == 'admin'){
 
 router.patch('/:id', requireAuthentication, async (req, res, next) => {
 const requestor = await getUserById(req.user);
-if( req.params.id == req.user || requestor.role == 'admin'){
+if( (req.params.id == req.user && req.body.role == requestor.role) || requestor.role == 'admin'){
 	try {
 		const user = await updateUserById(req.params.id, req.body);
 		if (user) {

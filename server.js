@@ -2,7 +2,7 @@ const express = require('express');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const logger = require('./lib/logger');
-const redis = require('redis');
+//const redis = require('redis');
 
 const { connectToDB } = require('./lib/mongo');
 
