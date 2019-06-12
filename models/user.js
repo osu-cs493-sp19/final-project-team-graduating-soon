@@ -9,8 +9,6 @@ const bcrypt = require("bcryptjs");
 const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const { ObjectId } = require('mongodb');
 
-const mysqlPool = require('../lib/mysqlPool');
-
 
 const UserSchema = {
     id: { required: false },
