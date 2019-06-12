@@ -7,7 +7,9 @@ const { UserSchema,
 	postUserLogin,
 	getUserByEmail,
 	validateUser,
-	getCoursesByInstructorId
+	getCoursesByInstructorId,
+	deleteUserById,
+	updateUserById,
 } = require('../models/user');
 const bcrypt = require('bcryptjs');
 const { generateAuthToken, requireAuthentication } = require('../lib/auth');
@@ -209,68 +211,50 @@ router.get('/:id', requireAuthentication, async (req, res, next) => {
  * Route to delete a user.
  */
 router.delete('/:id', requireAuthentication, async (req, res, next) =>{
-try {
-	const user = await getUserByID(parseInt(req.user));
-	if(user.role == 'admin'){
-		 deleteUserByID(id)
-		  .then((deleteSuccessful) => {
-			if (deleteSuccessful) {
-			  res.status(204).end();
-			} else {
-			  next();
-			}
-		  })
-		  .catch((err) => {
-			res.status(500).json({
-			  error: "Unable to delete user."
-			});
-		  });
-	}else if( req.params.id == req.user){
-		deleteUserByID(id)
-		  .then((deleteSuccessful) => {
-			if (deleteSuccessful) {
-			  res.status(204).end();
-			} else {
-			  next();
-			}
-		  })
-		  
+const requestor = await getUserById(parseInt(req.user));
+if( req.params.id == req.user || requestor.role == 'admin'){
+	try {
+		const user = await deleteUserById(req.params.id);
+		if (user) {
+		  res.status(200).send(user);
+		} else {
+		  next();
+		}
+	  } catch (err) {
+		console.log(err);
+		res.status(500).send({
+		  error: "Unable to delete user."
+		})
+	  }
 	}else{
 		res.status(403).json({
 			  error: "Unauthorized to access that resource."
 		});
 	}
-}catch (err) {
-    console.error(err);
-    res.status(500).send({
-      error: "Unable to delete user.  Please try again later."
-    });
-  }
 });
 
 
-router.put('/:userID', requireAuthentication, async (req, res, next) => {
-try {
-    const user = await getUserByID(parseInt(req.user));
-    if (user.role == 'admin') {
-			if (validation.validateAgainstSchema(req.body, UserSchema)) {
-			   updateUserByID(userID, req.body)
-			}
-      res.status(200).send({ user: userID });
-    }else if(req.user == req.body.id && req.body.role == user.role){
-			if (validation.validateAgainstSchema(req.body, UserSchema)) {
-			   updateUserByID(userID, req.body)
-			}
-			res.status(200).send({ user: userID });
-	}else {
-      next();
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({
-      error: "Invalid Authorization Level, please check parameters"
-    });
-  }
+router.patch('/:id', requireAuthentication, async (req, res, next) => {
+const requestor = await getUserById(req.user);
+if( req.params.id == req.user || requestor.role == 'admin'){
+	try {
+		const user = await updateUserById(req.params.id, req.body);
+		if (user) {
+		  res.status(200).send(user);
+		} else {
+		  next();
+		}
+	  } catch (err) {
+		console.log(err);
+		res.status(500).send({
+		  error: "Unable to update user."
+		})
+	  }
+	}else{
+		res.status(403).json({
+			  error: "Unauthorized to access that resource."
+		});
+	}
 });
 
 

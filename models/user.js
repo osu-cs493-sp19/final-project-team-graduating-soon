@@ -91,46 +91,30 @@ async function getCoursesByInstructorId(id) {
 exports.getCoursesByInstructorId = getCoursesByInstructorId;
 
 
-function deleteUserByID(id) {
-  return new Promise((resolve, reject) => {
-    mysqlPool.query(
-      'DELETE FROM users WHERE id = ?',
-      [ userID ],
-      function (err, result) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result.affectedRows > 0);
-        }
-      }
-    );
-  });
+async function deleteUserById(id) {
+  const db = getDBReference();
+  const collection = db.collection('users');
+  const result = await collection.deleteOne(
+    { "_id": ObjectId(id) }
+  );
+  return result;
 }
-exports.deleteUserByID = deleteUserByID;
+exports.deleteUserById = deleteUserById;
 
 
 
-function updateUserByID(id, user) {
-  return new Promise((resolve, reject) => {
-    const userValues = {
-	  id: null,
-          name: user.name,
-          email: user.email,
-		  role: user.role
-    };
-    mysqlPool.query(
-      'UPDATE users SET ? WHERE id = ?',
-      [ userValues, id ],
-      function (err, result) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result.affectedRows > 0);
-        }
-      }
-    );
-  });
+async function updateUserById(id, user) {
+	console.log("HEEEEEEEEEY",user);
+   const db = getDBReference();
+   const collection = db.collection('users');
+   const passwordHash = await bcrypt.hash(user.password, 8);
+   const result = await collection.replaceOne(
+    { "_id": ObjectId(id) },
+	{"name":user.name, "email": user.email, "password": passwordHash, "role": user.role}
+	);
+return result;
 }
+exports.updateUserById = updateUserById;
 
 
  exports.validateUser = async function (email, password) {
