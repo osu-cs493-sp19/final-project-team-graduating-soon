@@ -1,10 +1,4 @@
 
-
-
-// UNTOUCHED REVIEWS - OLD CODE - NEEDS UPDATE
-
-
-
 const router = require('express').Router();
 const validation = require('../lib/validation');
 
@@ -21,8 +15,20 @@ const {
   submissionSchema
 } = require("../models/submission");
 
+const {getCourseByID} = require('../models/course');
+const {getUserById} = require('../models/user');
 
-router.post("/", async (req, res) => {
+const bcrypt = require('bcryptjs');
+const { generateAuthToken, requireAuthentication } = require('../lib/auth');
+const { validateAgainstSchema } = require('../lib/validation');
+
+
+
+
+router.post("/", requireAuthentication, async (req, res) => {
+const requestor = await getUserById(req.user);
+const course = await getCourseByID(req.body.courseId);
+if(requestor.role == 'admin' ||  requestor.id == course.instructorID){
   if (validation.validateAgainstSchema(req.body, AssignmentSchema)) {
     try {
       const id = await insertNewAssignment(req.body);
@@ -40,6 +46,11 @@ router.post("/", async (req, res) => {
       err: "The request body was either not present or did not contain a valid Assignment object."
     });
   }
+ }else {
+	res.status(403).json({
+		error: "Unauthorized to access that resource."
+	});
+}
 });
 
 
@@ -61,7 +72,10 @@ router.get("/:assignmentid", async (req, res, next) => {
 });
 
 
-router.patch("/:assignmentid", async(req, res, next) => {
+router.patch("/:assignmentid",  requireAuthentication, async(req, res, next) => {
+const requestor = await getUserById(req.user);
+const course = await getCourseByID(req.body.courseId);
+if(requestor.role == 'admin' ||  requestor.id == course.instructorID){
   try {
     const assignment = await updateAssignment(req.params.assignmentid, req.body);
     if (assignment) {
@@ -75,11 +89,19 @@ router.patch("/:assignmentid", async(req, res, next) => {
       error: "Unable to update assignment."
     })
   }
-
+ }else {
+	res.status(403).json({
+		error: "Unauthorized to access that resource."
+	});
+}
 });
 
 
-router.delete("/:assignmentid", async (req, res, next) => {
+router.delete("/:assignmentid",   requireAuthentication, async (req, res, next) => {
+const requestor = await getUserById(req.user);
+const assignment = await getAssignmentByID(req.params.assignmentid);
+const course = await getCourseByID(assignment.courseId);
+if(requestor.role == 'admin' ||  requestor.id == course.instructorID){
   try {
     const assignment = await deleteAssignment(req.params.assignmentid);
     if (assignment) {
@@ -93,11 +115,19 @@ router.delete("/:assignmentid", async (req, res, next) => {
       error: "Unable to delete assignment."
     })
   }
-
+ }else {
+	res.status(403).json({
+		error: "Unauthorized to access that resource."
+	});
+}
 });
 
 
-router.get("/:assignmentid/submissions", async (req, res, next) => {
+router.get("/:assignmentid/submissions",   requireAuthentication, async (req, res, next) => {
+const requestor = await getUserById(req.user);
+const assignment = await getAssignmentByID(req.params.assignmentid);
+const course = await getCourseByID(assignment.courseId);
+if(requestor.role == 'admin' ||  requestor.id == course.instructorID){
   try {
     const AssignmentsPage = await getAssignmentsPage(
       parseInt(req.query.page) || 1
@@ -119,10 +149,28 @@ router.get("/:assignmentid/submissions", async (req, res, next) => {
       error: "Error fetching submissions.  Try again later."
     });
   }
+ }else {
+	res.status(403).json({
+		error: "Unauthorized to access that resource."
+	});
+}
 });
 
 
-router.post("/:assignmentid/submissions", async (req, res) => {
+router.post("/:assignmentid/submissions",   requireAuthentication, async (req, res) => {
+const requestor = await getUserById(req.user);
+const assignment = await getAssignmentByID(req.params.assignmentid);
+const course = await getCourseByID(assignment.courseId);
+
+var i;
+var check = 0;
+for (i = 0; i < course.students.length; i++) {
+	 if(course.students[i] == requestor.id){
+		 check = 1;
+	 }
+} 
+
+if(check == 1){
   if (validation.validateAgainstSchema(req.body, submissionSchema)) {
     try {
       const id = await insertNewSubmission(req.params.assignmentid, req.body);
@@ -140,6 +188,11 @@ router.post("/:assignmentid/submissions", async (req, res) => {
       err: "Assignment body does not contain a valid Submissions."
     });
   }
+} else {
+	res.status(403).json({
+		error: "Unauthorized to access that resource."
+	});
+}
 });
 
 module.exports = router;
