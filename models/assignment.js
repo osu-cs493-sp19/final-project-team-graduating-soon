@@ -2,7 +2,8 @@
  * Schema and data accessor methods;
  */
 
-const { getDBReference } = require("../lib/mongo");
+const fs = require('fs');
+const { getDBReference, GridFSBucket  } = require("../lib/mongo");
 const { extractValidFields } = require("../lib/validation");
 const ObjectID = require('mongodb').ObjectID;
 
@@ -93,6 +94,8 @@ getAssignmentsPage = async function (page) {
 exports.getAssignmentsPage = getAssignmentsPage;
 
 
+
+
 async function insertNewSubmission(id, body) {
   const db = getDBReference();
   const collection = db.collection("assignments");
@@ -101,3 +104,40 @@ async function insertNewSubmission(id, body) {
   return result.insertedId;
 }
 exports.insertNewSubmission = insertNewSubmission;
+
+// function insertNewSubmission(id, newUpload) {
+//   return new Promise((resolve, reject) => {
+//       const db = getDBReference();
+//       const bucket = new GridFSBucket(db, { bucketName: 'submissions' });
+//       const assignmentCollection = db.collection('assignments');
+  
+//       const metadata = {
+//           contentType: newUpload.contentType,
+//           assignmentid: newUpload.assignmentid,
+//           studentid: newUpload.studentid
+//       };
+  
+//       const uploadStream = bucket.openUploadStream(
+//           newUpload.filename,
+//           {
+//               metadata: metadata
+//           }
+//       );
+  
+//       fs.createReadStream(newUpload.path)
+//         .pipe(uploadStream)
+//         .on('error', (err) => {
+//             reject(err);
+//         })
+//         .on('finish', async (result) => {
+//             await assignmentCollection.updateOne({_id: new ObjectId(newUpload.assignmentid)}, {$addToSet : {submissions: result._id}});
+//             resolve(result._id);
+//         });
+//   });
+// } exports.insertNewSubmission = insertNewSubmission;
+
+exports.getDownloadStreamByFilename = function (filename) {
+  const db = getDBReference();
+  const bucket = new GridFSBucket(db, { bucketName: 'submissions' });
+  return bucket.openDownloadStreamByName(filename);
+};
