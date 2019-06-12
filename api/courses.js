@@ -1,8 +1,5 @@
 
 
-// UNTOUCHED BUSINESS -  OLD CODE - NEEDS UPDATE
-
-
 const router = require("express").Router();
 const validation = require("../lib/validation");
 const {
@@ -15,6 +12,13 @@ const {
   deleteCourse,
   generateCSV
 } = require('../models/course');
+
+
+const {getUserById} = require('../models/user');
+
+const bcrypt = require('bcryptjs');
+const { generateAuthToken, requireAuthentication } = require('../lib/auth');
+const { validateAgainstSchema } = require('../lib/validation');
 
 
 router.get("/", async (req, res) => {
