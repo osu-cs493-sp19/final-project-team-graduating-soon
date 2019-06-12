@@ -15,7 +15,7 @@ const CourseSchema = {
   number: { required: true },
   title: { required: true },
   term: { required: false },
-  instrutorId: { required: false }
+  instructorID: { required: false }
 };
 exports.CourseSchema = CourseSchema;
 

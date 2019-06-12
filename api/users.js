@@ -4,7 +4,6 @@ const validation = require('../lib/validation');
 const { UserSchema,
 	insertNewUser, 
 	getUserById, 
-	postUserLogin,
 	getUserByEmail,
 	validateUser,
 	getCoursesByInstructorId,
@@ -15,109 +14,18 @@ const bcrypt = require('bcryptjs');
 const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const { validateAgainstSchema } = require('../lib/validation');
 
-/*
-const { getBusinessesByOwnerId } = require('../models/business');
-const { getReviewsByUserId } = require('../models/review');
-const { getPhotosByUserId } = require('../models/photo');
-*/
-
-
-
-/*
- * Route to list all of a user's businesses.
- */
- 
- /* 
-router.get('/:id/businesses', requireAuthentication, async (req, res, next) => {
-if (req.user != req.params.id) {
-	console.log(req.user);
-    res.status(403).json({
-      error: "Unauthorized to access that resource."
-    });
-	console.log(req.params.id);
-  } else {
-  try {
-    const businesses = await 			getBusinessesByOwnerId(parseInt(req.params.id));
-    if (businesses) {
-      res.status(200).send({ businesses: businesses });
-    } else {
-      next();
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({
-      error: "Unable to fetch businesses.  Please try again later."
-    });
-  }
-}
-}); 
-*/
-
-
-/*
- * Route to list all of a user's reviews.
- */
- /* 
-router.get('/:id/reviews', requireAuthentication, async (req, res, next) => {
-  if (req.user != req.params.id) {
-	console.log(req.user);
-    res.status(403).json({
-      error: "Unauthorized to access that resource."
-    });
-	console.log(req.params.id);
-  } else {
-  try {
-    const reviews = await getReviewsByUserId(parseInt(req.params.id));
-    if (reviews) {
-      res.status(200).send({ reviews: reviews });
-    } else {
-      next();
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({
-      error: "Unable to fetch reviews.  Please try again later."
-    });
-  }
-}
-});
- */
-
-
-/*
- * Route to list all of a user's photos.
- */
- /* 
-router.get('/:id/photos', requireAuthentication, async (req, res, next) => {
-if (req.user != req.params.id) {
-	console.log(req.user);
-    res.status(403).json({
-      error: "Unauthorized to access that resource."
-    });
-	console.log(req.params.id);
-  } else {
-  try {
-    const photos = await getPhotosByUserId(parseInt(req.params.id));
-    if (photos) {
-      res.status(200).send({ photos: photos });
-    } else {
-      next();
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({
-      error: "Unable to fetch photos.  Please try again later."
-    });
-  }
-}
-});
- */
-
-/*
- * Route to create a new user.
- */
  router.post('/', async (req, res) => {
   console.log("req user: ", req.user);
+  try{
+	  const user = await getUserByEmail(req.body.email);
+	     if(user.email){
+			res.status(403).send({
+				  error: "Email already exists!"
+			});
+		 }
+  }catch (err) {
+  }
+  
   if (validateAgainstSchema(req.body, UserSchema)) {
     try {
       if(req.body.role == "admin" ){
@@ -147,7 +55,6 @@ if (req.user != req.params.id) {
     });
   }
 });
-
 
 
 router.post('/login', async (req, res) => {
@@ -205,11 +112,7 @@ router.get('/:id', requireAuthentication, async (req, res, next) => {
   }
 });
 
-//**************************************************8888888
 
-/*
- * Route to delete a user.
- */
 router.delete('/:id', requireAuthentication, async (req, res, next) =>{
 const requestor = await getUserById(parseInt(req.user));
 if( req.params.id == req.user || requestor.role == 'admin'){
@@ -256,8 +159,6 @@ if( req.params.id == req.user || requestor.role == 'admin'){
 		});
 	}
 });
-
-
 
 
 module.exports = router;

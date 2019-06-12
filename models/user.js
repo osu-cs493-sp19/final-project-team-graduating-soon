@@ -10,9 +10,8 @@ const { generateAuthToken, requireAuthentication } = require('../lib/auth');
 const { ObjectId } = require('mongodb');
 
 const mysqlPool = require('../lib/mysqlPool');
-/*
- * Schema describing required/optional fields of a user object.
- */
+
+
 const UserSchema = {
     id: { required: false },
     name: { required: true },
@@ -22,10 +21,6 @@ const UserSchema = {
   };
 exports.UserSchema = UserSchema;
 
-/*
- * Executes a MySQL query to insert a new user into the database.  Returns
- * a Promise that resolves to the ID of the newly-created user entry.
- */
 exports.insertNewUser = async function (user) {
     const userToInsert = extractValidFields(user, UserSchema);
     const db = getDBReference();
@@ -38,9 +33,6 @@ exports.insertNewUser = async function (user) {
     return result.insertedId;
 };
 
-/*
-* Fetch a user from the DB based on user ID.
-*/
 async function getUserById(id, includePassword) {
     const db = getDBReference();
     const collection = db.collection('users');
@@ -53,9 +45,6 @@ async function getUserById(id, includePassword) {
 };
 exports.getUserById = getUserById;
 
-/*
-* Fetch a user from the DB based on user email.
-*/
 async function getUserByEmail(userEmail, includePassword) {
     const db = getDBReference();
     const collection = db.collection('users');
@@ -67,7 +56,6 @@ async function getUserByEmail(userEmail, includePassword) {
     return results[0];
 };
 exports.getUserByEmail = getUserByEmail;
-
 
 async function getCoursesByInstructorId(id) {
     const db = getDBReference();
@@ -90,7 +78,6 @@ async function getCoursesByInstructorId(id) {
 };
 exports.getCoursesByInstructorId = getCoursesByInstructorId;
 
-
 async function deleteUserById(id) {
   const db = getDBReference();
   const collection = db.collection('users');
@@ -100,8 +87,6 @@ async function deleteUserById(id) {
   return result;
 }
 exports.deleteUserById = deleteUserById;
-
-
 
 async function updateUserById(id, user) {
 	console.log("HEEEEEEEEEY",user);
@@ -115,7 +100,6 @@ async function updateUserById(id, user) {
 return result;
 }
 exports.updateUserById = updateUserById;
-
 
  exports.validateUser = async function (email, password) {
     const user = await getUserByEmail(email, true);
