@@ -3,7 +3,7 @@
  */
 
 const { getDBReference } = require("../lib/mongo");
-const { getUserByID } = require("../models/user");
+const { getUserById } = require("../models/user");
 const ObjectID = require('mongodb').ObjectID;
 
 
@@ -144,7 +144,7 @@ async function generateCSV(id) {
     const data = [];
 
     for (var i = 0; i < studentsLen; i++) {
-      const user = await getUserByID(students[i]);
+      const user = await getUserById(students[i]);
       data.push([ students[i].toString(), user.name.toString(), user.email.toString() ]);
     }
 

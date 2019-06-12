@@ -113,6 +113,30 @@ router.get('/:id', requireAuthentication, async (req, res, next) => {
 });
 
 
+router.get('/', requireAuthentication, async (req, res, next) => {
+ if (req.user) {	   
+    try {
+      const user = await getUserById(req.user);
+      if (user) {
+        res.status(200).send(user);
+      } else {
+        next();
+      }
+    } catch (err) {
+      console.error("  -- Error:", err);
+      res.status(500).send({
+        error: "Error fetching user.  Try again later."
+      });
+    }
+  } else {
+    res.status(403).send({
+      error: "Unauthorized to access the specified resource"
+    });
+  }
+});
+
+
+
 router.delete('/:id', requireAuthentication, async (req, res, next) =>{
 const requestor = await getUserById(parseInt(req.user));
 if( req.params.id == req.user || requestor.role == 'admin'){
