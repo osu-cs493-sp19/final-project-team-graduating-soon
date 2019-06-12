@@ -42,7 +42,9 @@ router.get("/", async (req, res) => {
 });
 
 
-router.post("/", async (req, res) => {
+router.post("/", requireAuthentication, async (req, res) => {
+const requestor = await getUserById(req.user);
+if(requestor.role == 'admin'){
   if (validation.validateAgainstSchema(req.body, CourseSchema)) {
     try {
       const id = await insertNewCourse(req.body);
@@ -60,6 +62,11 @@ router.post("/", async (req, res) => {
       err: "Request body does not contain a valid Course."
     });
   }
+}else{
+	res.status(403).send({
+      err: "Requestor does not have sufficent privledges."
+    });
+}
 });
 
 
@@ -81,10 +88,12 @@ router.get("/:courseid", async (req, res, next) => {
 });
 
 
-router.patch("/:courseid", async(req, res, next) => {
+router.patch("/:courseid",  requireAuthentication, async(req, res, next) => {
+const requestor = await getUserById(req.user);
+if(requestor.role == 'admin' || 'instructor'){
   try {
     const course = await updateCourse(req.params.courseid, req.body);
-    if (course) {
+    if (course  && (course.instructorID == requestor.id || requestor.role == 'admin' ) ) {
       res.status(200).send(course);
     } else {
       next();
@@ -95,11 +104,18 @@ router.patch("/:courseid", async(req, res, next) => {
       error: "Unable to update course."
     })
   }
+}else{
+		res.status(403).json({
+			  error: "Unauthorized to access that resource."
+		});
+}
 
 });
 
 
-router.delete("/:courseid", async (req, res, next) => {
+router.delete("/:courseid", requireAuthentication, async (req, res, next) => {
+const requestor = await getUserById(req.user);
+if(requestor.role == 'admin'){
   try {
     const course = await deleteCourse(req.params.courseid);
     if (course) {
@@ -113,14 +129,20 @@ router.delete("/:courseid", async (req, res, next) => {
       error: "Unable to delete course."
     })
   }
-
+}else{
+	res.status(403).json({
+		  error: "Unauthorized to access that resource."
+	});
+}
 });
 
 
-router.get('/:id/students', async (req, res, next) => {
+router.get('/:id/students',   requireAuthentication,  async (req, res, next) => {
+const requestor = await getUserById(req.user);
+if(requestor.role == 'admin' || 'instructor'){
   try {
     const course = await getCourseByID(req.params.id);
-    if (course) {
+    if (course && (course.instructorID == requestor.id || requestor.role == 'admin' )) {
       res.status(200).send({ students: course.students });
     } else {
       next();
@@ -131,10 +153,18 @@ router.get('/:id/students', async (req, res, next) => {
       error: "Unable to fetch students.  Please try again later."
     });
   }
+}else {
+	res.status(403).json({
+		error: "Unauthorized to access that resource."
+	});
+}
 });
 
 
-router.post("/:id/students", async (req, res) => {
+router.post("/:id/students",    requireAuthentication,  async (req, res) => {
+const requestor = await getUserById(req.user);
+const course = await getCourseByID(req.params.id);
+if(requestor.role == 'admin' ||  requestor.id == course.instructorID){
   if (req.body) {
     try {
       const id = await addRemoveStudents(req.params.id, req.body);
@@ -152,13 +182,20 @@ router.post("/:id/students", async (req, res) => {
       err: "The request body was either not present or did not contain the fields described above"
     });
   }
+ }else {
+	res.status(403).json({
+		error: "Unauthorized to access that resource."
+	});
+}
 });
 
 
-router.get('/:id/roster', async (req, res, next) => {
+router.get('/:id/roster',  requireAuthentication, async (req, res, next) => {
+const requestor = await getUserById(req.user);
+if(requestor.role == 'admin' || 'instructor'){
   try {
     const course = await getCourseByID(req.params.id);
-    if (course) {
+    if (course && (course.instructorID == requestor.id || requestor.role == 'admin' )) {
       const csv = await generateCSV(req.params.id);
       res.status(200).send({ csv });
     } else {
@@ -170,6 +207,11 @@ router.get('/:id/roster', async (req, res, next) => {
       error: "Unable to fetch students.  Please try again later."
     });
   }
+  }else {
+	res.status(403).json({
+		error: "Unauthorized to access that resource."
+	});
+}
 });
 
 
