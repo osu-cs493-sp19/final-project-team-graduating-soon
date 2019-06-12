@@ -7,15 +7,23 @@
 
 const router = require('express').Router();
 const validation = require('../lib/validation');
-const { getDBReference } = require("../lib/mongo");
-const ObjectID = require('mongodb').ObjectID;
+
+const { 
+  AssignmentSchema,
+  insertNewAssignment,
+  getAssignmentByID,
+  updateAssignment,
+  deleteAssignment,
+  insertNewSubmission
+ } = require("../models/assignment");
+
+const {
+  submissionSchema
+} = require("../models/submission");
 
 
-/*
- * Route to create a new review.
- */
 router.post("/", async (req, res) => {
-  if (validation.validateAgainstSchema(req.body, assignmentSchema)) {
+  if (validation.validateAgainstSchema(req.body, AssignmentSchema)) {
     try {
       const id = await insertNewAssignment(req.body);
       res.status(201).send({
@@ -24,20 +32,17 @@ router.post("/", async (req, res) => {
     } catch (err) {
       console.error(err);
       res.status(500).send({
-        error: "Failed to insert assignment.  Try again later."
+        error: "The request was not made by an authenticated User satisfying the authorization criteria described above."
       });
     }
   } else {
     res.status(400).send({
-      err: "Assignment body does not contain a valid Assignment."
+      err: "The request body was either not present or did not contain a valid Assignment object."
     });
   }
 });
 
 
-/*
- * Route to fetch info about a specific review.
- */
 router.get("/:assignmentid", async (req, res, next) => {
   try {
     const assignment = await getAssignmentByID(req.params.assignmentid);
@@ -56,9 +61,6 @@ router.get("/:assignmentid", async (req, res, next) => {
 });
 
 
-/*
- * Route to update a review.
- */
 router.patch("/:assignmentid", async(req, res, next) => {
   try {
     const assignment = await updateAssignment(req.params.assignmentid, req.body);
@@ -77,9 +79,6 @@ router.patch("/:assignmentid", async(req, res, next) => {
 });
 
 
-/*
- * Route to delete a assignment.
- */
 router.delete("/:assignmentid", async (req, res, next) => {
   try {
     const assignment = await deleteAssignment(req.params.assignmentid);
@@ -100,12 +99,22 @@ router.delete("/:assignmentid", async (req, res, next) => {
 
 router.get("/:assignmentid/submissions", async (req, res, next) => {
   try {
-    const SubmissionsPage = await getSubmissionsPage(
+    const AssignmentsPage = await getAssignmentsPage(
       parseInt(req.query.page) || 1
     );
-    console.log(SubmissionsPage);
-    res.status(200).send(SubmissionsPage);
+    console.log(AssignmentsPage);
+    AssignmentsPage.links = {};
+    if (AssignmentsPage.page < AssignmentsPage.totalPages) {
+      AssignmentsPage.links.nextPage = `/submissions?page=${AssignmentsPage.page + 1}`;
+      AssignmentsPage.links.lastPage = `/submissions?page=${AssignmentsPage.totalPages}`;
+    }
+    if (AssignmentsPage.page > 1) {
+      AssignmentsPage.links.prevPage = `/submissions?page=${AssignmentsPage.page - 1}`;
+      AssignmentsPage.links.firstPage = '/submissions?page=1';
+    }
+    res.status(200).send(AssignmentsPage);
   } catch (err) {
+    console.error(err);
     res.status(500).send({
       error: "Error fetching submissions.  Try again later."
     });
@@ -116,14 +125,14 @@ router.get("/:assignmentid/submissions", async (req, res, next) => {
 router.post("/:assignmentid/submissions", async (req, res) => {
   if (validation.validateAgainstSchema(req.body, submissionSchema)) {
     try {
-      const id = await insertNewSubmission(req.body);
+      const id = await insertNewSubmission(req.params.assignmentid, req.body);
       res.status(201).send({
         id: id
       });
     } catch (err) {
       console.error(err);
       res.status(500).send({
-        error: "Failed to insert submissions.  Try again later."
+        error: "The request was not made by an authenticated User satisfying the authorization criteria described above."
       });
     }
   } else {

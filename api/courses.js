@@ -25,12 +25,12 @@ router.get("/", async (req, res) => {
     console.log(CoursesPage);
     CoursesPage.links = {};
     if (CoursesPage.page < CoursesPage.totalPages) {
-      CoursesPage.links.nextPage = `/businesses?page=${CoursesPage.page + 1}`;
-      CoursesPage.links.lastPage = `/businesses?page=${CoursesPage.totalPages}`;
+      CoursesPage.links.nextPage = `/courses?page=${CoursesPage.page + 1}`;
+      CoursesPage.links.lastPage = `/courses?page=${CoursesPage.totalPages}`;
     }
     if (CoursesPage.page > 1) {
-      CoursesPage.links.prevPage = `/businesses?page=${CoursesPage.page - 1}`;
-      CoursesPage.links.firstPage = '/businesses?page=1';
+      CoursesPage.links.prevPage = `/courses?page=${CoursesPage.page - 1}`;
+      CoursesPage.links.firstPage = '/courses?page=1';
     }
     res.status(200).send(CoursesPage);
   } catch (err) {
